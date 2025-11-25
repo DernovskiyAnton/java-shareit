@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.BadRequestException;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -23,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Реализация сервиса для работы с вещами.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -68,14 +72,20 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemWithBookingsDto getItemById(Long itemId) {
+    public ItemWithBookingsDto getItemById(Long itemId, Long userId) {
         log.debug("Getting item by id: {}", itemId);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Item with id=" + itemId + " not found"));
 
-        LocalDateTime now = LocalDateTime.now();
-        Booking lastBooking = bookingRepository.findLastBookingForItem(itemId, now);
-        Booking nextBooking = bookingRepository.findNextBookingForItem(itemId, now);
+        // Бронирования видны только владельцу
+        Booking lastBooking = null;
+        Booking nextBooking = null;
+        if (userId != null && item.getOwner().getId().equals(userId)) {
+            LocalDateTime now = LocalDateTime.now();
+            lastBooking = bookingRepository.findLastBookingForItem(itemId, now);
+            nextBooking = bookingRepository.findNextBookingForItem(itemId, now);
+        }
+
         List<Comment> comments = commentRepository.findByItemId(itemId);
 
         return ItemMapper.toItemWithBookingsDto(item, lastBooking, nextBooking, comments);
@@ -132,7 +142,7 @@ public class ItemServiceImpl implements ItemService {
                 userId, itemId, now);
 
         if (!hasBooking) {
-            throw new ConflictException(
+            throw new BadRequestException(
                     "User with id=" + userId + " cannot comment item with id=" + itemId +
                             " without completed booking");
         }

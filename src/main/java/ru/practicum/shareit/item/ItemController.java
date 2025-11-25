@@ -10,9 +10,6 @@ import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.List;
 
-/**
- * Контроллер для работы с вещами.
- */
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
@@ -34,8 +31,9 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemWithBookingsDto getItemById(@PathVariable Long itemId) {
-        return itemService.getItemById(itemId);
+    public ItemWithBookingsDto getItemById(@PathVariable Long itemId,
+                                           @RequestHeader(value = "X-Sharer-User-Id", required = false) Long userId) {
+        return itemService.getItemById(itemId, userId);
     }
 
     @GetMapping
