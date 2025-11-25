@@ -11,7 +11,9 @@ import ru.practicum.shareit.booking.Status;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
 import ru.practicum.shareit.booking.repository.BookingRepository;
+import ru.practicum.shareit.exception.BadRequestException;
 import ru.practicum.shareit.exception.ConflictException;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
@@ -39,7 +41,7 @@ public class BookingServiceImpl implements BookingService {
         // Валидация дат
         if (bookingDto.end().isBefore(bookingDto.start()) ||
                 bookingDto.end().equals(bookingDto.start())) {
-            throw new ConflictException("End date must be after start date");
+            throw new BadRequestException("End date must be after start date");
         }
 
         // Проверка пользователя
@@ -57,7 +59,7 @@ public class BookingServiceImpl implements BookingService {
 
         // Проверка доступности
         if (!item.getAvailable()) {
-            throw new ConflictException("Item with id=" + bookingDto.itemId() + " is not available");
+            throw new BadRequestException("Item with id=" + bookingDto.itemId() + " is not available");
         }
 
         Booking booking = new Booking();
@@ -83,7 +85,7 @@ public class BookingServiceImpl implements BookingService {
 
         // Только владелец вещи может подтвердить
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Only item owner can approve booking");
+            throw new ForbiddenException("Only item owner can approve booking");
         }
 
         // Нельзя изменить уже подтверждённое/отклонённое бронирование

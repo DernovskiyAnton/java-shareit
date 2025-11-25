@@ -17,7 +17,7 @@ public record BookingDto(
         LocalDateTime start,
 
         @NotNull(message = "End date must be specified")
-        @Future(message = "End date must be in future")
+        @FutureOrPresent(message = "End date must be in present or future")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         LocalDateTime end,
 
