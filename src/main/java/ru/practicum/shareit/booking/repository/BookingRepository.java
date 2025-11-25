@@ -86,4 +86,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "order by b.start asc " +
             "limit 1")
     Booking findNextBookingForItem(Long itemId, LocalDateTime now);
+
+    // Проверка что пользователь брал вещь в аренду и аренда завершилась
+    @Query("select case when count(b) > 0 then true else false end " +
+            "from Booking b " +
+            "where b.booker.id = ?1 " +
+            "and b.item.id = ?2 " +
+            "and b.end < ?3 " +
+            "and b.status = 'APPROVED'")
+    boolean existsByBookerIdAndItemIdAndEndBeforeAndStatusApproved(
+            Long bookerId,
+            Long itemId,
+            LocalDateTime end
+    );
 }
