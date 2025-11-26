@@ -3,23 +3,26 @@ package ru.practicum.shareit.user.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
-import ru.practicum.shareit.user.repository.InMemoryUserRepository;
+import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final InMemoryUserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public UserDto createUser(UserDto userDto) {
         log.debug("Creating user with email: {}", userDto.email());
         validateEmail(userDto.email(), null);
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserDto updateUser(Long userId, UserDto userDto) {
         log.debug("Updating user with id: {}", userId);
         User existingUser = userRepository.findById(userId)
@@ -42,7 +46,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User updatedUser = UserMapper.updateUserFromDto(existingUser, userDto);
-        updatedUser = userRepository.update(updatedUser);
+        updatedUser = userRepository.save(updatedUser);
 
         log.info("User updated with id: {}", userId);
         return UserMapper.toUserDto(updatedUser);
@@ -65,9 +69,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long userId) {
         log.debug("Deleting user with id: {}", userId);
-        if (userRepository.findById(userId).isEmpty()) {
+        if (!userRepository.existsById(userId)) {
             throw new NotFoundException("User with id=" + userId + " not found");
         }
         userRepository.deleteById(userId);

@@ -1,11 +1,14 @@
 package ru.practicum.shareit.item.dto;
 
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
 import lombok.experimental.UtilityClass;
 
+import java.util.List;
+
 @UtilityClass
 public class ItemMapper {
-
 
     public static ItemDto toItemDto(Item item) {
         if (item == null) {
@@ -44,5 +47,74 @@ public class ItemMapper {
             item.setAvailable(itemDto.available());
         }
         return item;
+    }
+
+    public static ItemWithBookingsDto toItemWithBookingsDto(
+            Item item,
+            Booking lastBooking,
+            Booking nextBooking,
+            List<Comment> comments) {
+        if (item == null) {
+            return null;
+        }
+
+        ItemWithBookingsDto.BookingShortDto lastBookingDto = lastBooking != null
+                ? new ItemWithBookingsDto.BookingShortDto(
+                lastBooking.getId(),
+                lastBooking.getBooker().getId(),
+                lastBooking.getStart(),
+                lastBooking.getEnd())
+                : null;
+
+        ItemWithBookingsDto.BookingShortDto nextBookingDto = nextBooking != null
+                ? new ItemWithBookingsDto.BookingShortDto(
+                nextBooking.getId(),
+                nextBooking.getBooker().getId(),
+                nextBooking.getStart(),
+                nextBooking.getEnd())
+                : null;
+
+        List<ItemWithBookingsDto.CommentDto> commentDtos = comments != null
+                ? comments.stream()
+                .map(comment -> new ItemWithBookingsDto.CommentDto(
+                        comment.getId(),
+                        comment.getText(),
+                        comment.getAuthor().getName(),
+                        comment.getCreated()))
+                .toList()
+                : List.of();
+
+        return new ItemWithBookingsDto(
+                item.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getAvailable(),
+                lastBookingDto,
+                nextBookingDto,
+                commentDtos
+        );
+    }
+
+    public static CommentDto toCommentDto(Comment comment) {
+        if (comment == null) {
+            return null;
+        }
+        return new CommentDto(
+                comment.getId(),
+                comment.getText(),
+                comment.getAuthor().getName(),
+                comment.getCreated()
+        );
+    }
+
+    public static Comment toComment(CommentDto commentDto) {
+        if (commentDto == null) {
+            return null;
+        }
+        Comment comment = new Comment();
+        comment.setId(commentDto.id());
+        comment.setText(commentDto.text());
+        comment.setCreated(commentDto.created());
+        return comment;
     }
 }
