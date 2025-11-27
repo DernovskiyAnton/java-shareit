@@ -6,18 +6,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.request.ItemRequest;
-import ru.practicum.shareit.request.ItemRequestDto;
-import ru.practicum.shareit.request.ItemRequestMapper;
+import ru.practicum.shareit.request.dto.ItemRequestDto;
+import ru.practicum.shareit.request.dto.ItemRequestMapper;
 import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,7 +24,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ItemRequestServiceImpl implements ItemRequestService {
 
-    private final ItemRequestRepository requestRepository;
+    private final ItemRequestRepository itemRequestRepository;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
 
@@ -39,14 +37,14 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found"));
 
         ItemRequest request = new ItemRequest();
-        request.setDescription(requestDto.description());
+        request.setDescription(requestDto.getDescription());
         request.setRequestor(requestor);
         request.setCreated(LocalDateTime.now());
 
-        request = requestRepository.save(request);
+        request = itemRequestRepository.save(request);
         log.info("Request created with id: {}", request.getId());
 
-        return ItemRequestMapper.toItemRequestDto(request, List.of());
+        return ItemRequestMapper.toItemRequestDto(request, itemRepository.findByRequest(request.getId()));
     }
 
     @Override
@@ -58,23 +56,31 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         }
 
         Sort sort = Sort.by(Sort.Direction.DESC, "created");
-        List<ItemRequest> requests = requestRepository.findByRequestorId(userId, sort);
+        List<ItemRequest> requests = itemRequestRepository.findByRequestorId(userId, sort);
 
-        return enrichRequestsWithItems(requests);
+        return requests.stream()
+                .map(request -> ItemRequestMapper.toItemRequestDto(
+                        request,
+                        itemRepository.findByRequest(request.getId())))
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<ItemRequestDto> getAllRequests(Long userId) {
-        log.debug("Getting all requests except for user {}", userId);
+        log.debug("Getting all requests except user {}", userId);
 
         if (!userRepository.existsById(userId)) {
             throw new NotFoundException("User with id=" + userId + " not found");
         }
 
         Sort sort = Sort.by(Sort.Direction.DESC, "created");
-        List<ItemRequest> requests = requestRepository.findByRequestorIdNot(userId, sort);
+        List<ItemRequest> requests = itemRequestRepository.findByRequestorIdNot(userId, sort);
 
-        return enrichRequestsWithItems(requests);
+        return requests.stream()
+                .map(request -> ItemRequestMapper.toItemRequestDto(
+                        request,
+                        itemRepository.findByRequest(request.getId())))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -85,34 +91,9 @@ public class ItemRequestServiceImpl implements ItemRequestService {
             throw new NotFoundException("User with id=" + userId + " not found");
         }
 
-        ItemRequest request = requestRepository.findById(requestId)
+        ItemRequest request = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " not found"));
 
-        List<Item> items = itemRepository.findAll().stream()
-                .filter(item -> requestId.equals(item.getRequest()))
-                .toList();
-
-        return ItemRequestMapper.toItemRequestDto(request, items);
-    }
-
-    private List<ItemRequestDto> enrichRequestsWithItems(List<ItemRequest> requests) {
-        if (requests.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> requestIds = requests.stream()
-                .map(ItemRequest::getId)
-                .toList();
-
-        List<Item> allItems = itemRepository.findAll();
-        Map<Long, List<Item>> itemsByRequest = allItems.stream()
-                .filter(item -> item.getRequest() != null && requestIds.contains(item.getRequest()))
-                .collect(Collectors.groupingBy(Item::getRequest));
-
-        return requests.stream()
-                .map(request -> ItemRequestMapper.toItemRequestDto(
-                        request,
-                        itemsByRequest.getOrDefault(request.getId(), List.of())))
-                .toList();
+        return ItemRequestMapper.toItemRequestDto(request, itemRepository.findByRequest(requestId));
     }
 }
