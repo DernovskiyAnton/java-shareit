@@ -2,6 +2,7 @@ name: ShareIt API Tests
 
 on:
   pull_request:
+<<<<<<< HEAD
   workflow_call:
 
 jobs:
@@ -194,3 +195,9 @@ jobs:
         with:
           name: postman_tests_report
           path: reports
+=======
+
+jobs:
+  build:
+    uses: yandex-praktikum/java-shareit/.github/workflows/api-tests.yml@ci
+>>>>>>> origin/main
