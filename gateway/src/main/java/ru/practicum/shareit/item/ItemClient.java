@@ -11,11 +11,6 @@ import ru.practicum.shareit.client.BaseClient;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
-import java.util.Map;
-
-/**
- * Gateway клиент для работы с items через Server.
- */
 @Service
 public class ItemClient extends BaseClient {
     private static final String API_PREFIX = "/items";
@@ -30,11 +25,11 @@ public class ItemClient extends BaseClient {
         );
     }
 
-    public ResponseEntity<Object> addItem(Long userId, ItemDto itemDto) {
+    public ResponseEntity<Object> addItem(long userId, ItemDto itemDto) {
         return post("", userId, itemDto);
     }
 
-    public ResponseEntity<Object> updateItem(Long userId, Long itemId, ItemDto itemDto) {
+    public ResponseEntity<Object> updateItem(long userId, Long itemId, ItemDto itemDto) {
         return patch("/" + itemId, userId, itemDto);
     }
 
@@ -42,16 +37,15 @@ public class ItemClient extends BaseClient {
         return get("/" + itemId, userId);
     }
 
-    public ResponseEntity<Object> getItemsByOwner(Long userId) {
+    public ResponseEntity<Object> getItemsByOwner(long userId) {
         return get("", userId);
     }
 
     public ResponseEntity<Object> searchItems(String text) {
-        Map<String, Object> parameters = Map.of("text", text);
-        return get("/search?text={text}", null, parameters);
+        return get("/search?text=" + text);
     }
 
-    public ResponseEntity<Object> addComment(Long userId, Long itemId, CommentDto commentDto) {
+    public ResponseEntity<Object> addComment(long userId, Long itemId, CommentDto commentDto) {
         return post("/" + itemId + "/comment", userId, commentDto);
     }
 }
